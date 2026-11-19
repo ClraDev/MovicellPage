@@ -1,24 +1,29 @@
 import { useRateStore } from '../../store/useRateStore'
 import { fmtUsd, fmtBs, refUsd, round2 } from '../../lib/pricing'
 
-// Muestra los 3 precios: divisas (oferta), bolívares y equivalente en $ a tasa BCV.
-// La tasa en sí NO se muestra.
-export default function PriceTriple({ product, size = 'sm' }) {
+// Muestra: precio en divisas, precio en bolívares y su equivalente en $ a tasa BCV.
+// El aviso "Oferta en divisas" solo aparece si el precio en divisas es menor al equivalente.
+// `markup` permite usar un recargo distinto al de los productos (por ejemplo, el de la revisión).
+export default function PriceTriple({ product, size = 'sm', markup: markupProp }) {
   const rate = useRateStore((s) => s.rate)
-  const markup = useRateStore((s) => s.markup)
+  const storeMarkup = useRateStore((s) => s.markup)
+  const markup = markupProp ?? storeMarkup
   const lg = size === 'lg'
 
   const cash = Number(product.price_usd)
   const ref = refUsd(product, markup)
   const bs = round2(ref * rate)
+  const hasOffer = ref > cash
 
   return (
     <div>
       <div className="flex flex-wrap items-baseline gap-x-2">
         <p className={`font-extrabold text-gray-900 ${lg ? 'text-4xl' : 'text-xl sm:text-2xl'}`}>{fmtUsd(cash)}</p>
-        <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold uppercase text-green-700 sm:text-xs">
-          Oferta en divisas
-        </span>
+        {hasOffer && (
+          <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold uppercase text-green-700 sm:text-xs">
+            Oferta en divisas
+          </span>
+        )}
       </div>
 
       {rate > 0 ? (

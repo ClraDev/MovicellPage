@@ -20,6 +20,8 @@ export const useRateStore = create((set, get) => {
       if (r.key === 'rate_auto') patch.auto = Number(r.value) === 1
       if (r.key === 'bs_markup') patch.markup = Number(r.value)
       if (r.key === 'inspection_fee') patch.inspectionFee = Number(r.value)
+      if (r.key === 'inspection_markup') patch.inspectionMarkup = Number(r.value)
+      if (r.key === 'inspection_fee_bcv') patch.inspectionFeeBcv = Number(r.value)
     }
     return patch
   }
@@ -31,6 +33,8 @@ export const useRateStore = create((set, get) => {
     auto: true,         // modo automático activo
     markup: 0,          // recargo % del precio referencial en Bs
     inspectionFee: 0,   // costo de la revisión técnica (USD, divisas)
+    inspectionMarkup: 0, // recargo % propio de la revisión para el precio en Bs
+    inspectionFeeBcv: 0, // precio manual de la revisión a tasa BCV en $ (0 = calcular con el recargo)
     updatedAt: null,
     loaded: false,
 
@@ -60,7 +64,8 @@ export const useRateStore = create((set, get) => {
       subscribed = true
       supabase
         .channel('settings-live')
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'settings' }, (p) => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, (p) => {
+          if (!p.new?.key) return
           update(fromRows([p.new]))
           if (p.new.key === 'rate_auto' && Number(p.new.value) === 1) get().fetchLive()
         })

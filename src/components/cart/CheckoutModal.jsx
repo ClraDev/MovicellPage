@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { X, Truck, Store, MapPin, Banknote, Landmark } from 'lucide-react'
 import WhatsAppIcon from '../ui/WhatsAppIcon'
 import IdField from '../ui/IdField'
 import Notice, { TITULAR_RETIRO, TITULAR_ENTREGA } from '../ui/Notice'
-import LocationPicker from '../ui/LocationPicker'
+// El mapa (Leaflet) se descarga solo cuando el cliente elige Delivery
+const LocationPicker = lazy(() => import('../ui/LocationPicker'))
 import { useCartStore } from '../../store/useCartStore'
 import { useRateStore } from '../../store/useRateStore'
 import { fmtUsd, fmtBs, cartTotals } from '../../lib/pricing'
@@ -112,7 +113,7 @@ export default function CheckoutModal() {
               <button type="button" onClick={() => set('pay', 'usd')}
                 className={`flex min-h-[64px] flex-col items-center justify-center rounded-xl border-2 px-2 text-sm font-bold transition ${pay === 'usd' ? 'border-brand bg-brand-marzipan/30 text-brand' : 'border-gray-200 text-gray-600'}`}>
                 <Banknote className="h-5 w-5" /> Divisas
-                <span className="text-[11px] font-semibold text-green-700">Mejor precio</span>
+                {saving > 0 && <span className="text-[11px] font-semibold text-green-700">Mejor precio</span>}
               </button>
               <button type="button" disabled={!bsAvailable} onClick={() => set('pay', 'bs')}
                 className={`flex min-h-[64px] flex-col items-center justify-center rounded-xl border-2 px-2 text-sm font-bold transition disabled:opacity-40 ${pay === 'bs' ? 'border-brand bg-brand-marzipan/30 text-brand' : 'border-gray-200 text-gray-600'}`}>
@@ -174,7 +175,9 @@ export default function CheckoutModal() {
 
                 {form.locMode === 'map' ? (
                   <>
-                    <LocationPicker value={form.pin} onChange={(pin) => set('pin', pin)} />
+                    <Suspense fallback={<div className="flex h-56 items-center justify-center rounded-xl bg-gray-100 text-sm text-gray-500">Cargando mapa...</div>}>
+                      <LocationPicker value={form.pin} onChange={(pin) => set('pin', pin)} />
+                    </Suspense>
                     {form.pin && <p className="mt-1 text-sm font-semibold text-green-700">Ubicación registrada</p>}
                   </>
                 ) : (

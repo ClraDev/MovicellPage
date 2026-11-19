@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useDeferredValue, useMemo } from 'react'
 import { PackageSearch, ArrowUpDown } from 'lucide-react'
 import ProductCard from './ProductCard'
 import { CATEGORIES } from '../../config'
@@ -22,25 +22,39 @@ const sorters = {
   'price-desc': (a, b) => Number(b.price_usd) - Number(a.price_usd),
 }
 
-export default function Catalog({ products, loading, error }) {
-  const { query, category, sort, setCategory, setQuery, setSort } = useUiStore()
+export default function Catalog({ products, loading, error, hasOffers }) {
+  const query = useUiStore((s) => s.query)
+  const category = useUiStore((s) => s.category)
+  const sort = useUiStore((s) => s.sort)
+  const limit = useUiStore((s) => s.limit)
+  const setCategory = useUiStore((s) => s.setCategory)
+  const setQuery = useUiStore((s) => s.setQuery)
+  const setSort = useUiStore((s) => s.setSort)
+  const showMore = useUiStore((s) => s.showMore)
+
+  // La búsqueda se procesa con prioridad baja para que escribir no se trabe en el teléfono
+  const deferredQuery = useDeferredValue(query)
 
   const filtered = useMemo(() => {
-    const q = normalize(query.trim())
+    const q = normalize(deferredQuery.trim())
     const list = products.filter(
       (p) =>
         (category === 'all' || p.category === category) &&
-        (!q || normalize(p.name).includes(q) || normalize(p.description).includes(q))
+        (!q || normalize(p.name).includes(q) || normalize(p.description).includes(q) || normalize(p.specs).includes(q))
     )
     const fn = sorters[sort]
     return fn ? [...list].sort(fn) : list
-  }, [products, query, category, sort])
+  }, [products, deferredQuery, category, sort])
+
+  const visible = filtered.slice(0, limit)
 
   return (
     <section id="catalogo" className="bg-white py-12">
       <div className="mx-auto max-w-7xl px-4">
         <h2 className="text-3xl font-extrabold">Catálogo</h2>
-        <p className="mt-1 text-gray-500">Precio preferencial en divisas y precio en bolívares.</p>
+        <p className="mt-1 text-gray-500">
+          {hasOffers ? 'Precio preferencial en divisas y precio en bolívares.' : 'Precios en divisas y en bolívares.'}
+        </p>
 
         <div className="mt-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
@@ -89,11 +103,20 @@ export default function Catalog({ products, loading, error }) {
             <p className="mt-3 font-semibold">No se encontraron productos con los criterios seleccionados.</p>
           </div>
         ) : (
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
-            {filtered.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
+          <>
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
+              {visible.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+            {filtered.length > visible.length && (
+              <div className="mt-8 text-center">
+                <button onClick={showMore} className="btn-secondary">
+                  Mostrar más productos ({filtered.length - visible.length} restantes)
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </section>

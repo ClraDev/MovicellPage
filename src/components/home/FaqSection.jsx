@@ -13,7 +13,7 @@ const FAQ = [
   },
   {
     q: '¿Por qué existen precios en divisas y en bolívares?',
-    a: 'El precio preferencial en divisas aplica para pagos en efectivo, Zelle o Binance. Si prefiere pagar en bolívares, el monto se calcula según la tasa oficial del BCV del día.',
+    a: 'El precio en divisas aplica para pagos en efectivo, Zelle o Binance. Si prefiere pagar en bolívares, el monto se calcula según la tasa oficial del BCV del día.',
   },
   {
     q: '¿Quién puede retirar el equipo?',

@@ -39,8 +39,8 @@ export const useCartStore = create(
 
       // Mantiene precios/stock del carrito al día con el catálogo
       syncWithProducts: (products) =>
-        set((s) => ({
-          items: s.items
+        set((s) => {
+          const next = s.items
             .map((i) => {
               const p = products.find((x) => x.id === i.id)
               if (!p) return null
@@ -56,8 +56,10 @@ export const useCartStore = create(
                 qty: Math.min(i.qty, stock),
               }
             })
-            .filter(Boolean),
-        })),
+            .filter(Boolean)
+          const same = next.length === s.items.length && next.every((n, k) => JSON.stringify(n) === JSON.stringify(s.items[k]))
+          return same ? s : { items: next }
+        }),
     }),
     { name: 'movicell-cart', partialize: (s) => ({ items: s.items }) }
   )

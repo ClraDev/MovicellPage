@@ -26,6 +26,8 @@ insert into settings (key, value) values ('exchange_rate', 0) on conflict do not
 insert into settings (key, value) values ('rate_auto', 1)     on conflict do nothing;
 insert into settings (key, value) values ('bs_markup', 0)     on conflict do nothing;  -- recargo % pago en Bs
 insert into settings (key, value) values ('inspection_fee', 0) on conflict do nothing; -- costo de revisión ($)
+insert into settings (key, value) values ('inspection_markup', 0)  on conflict do nothing; -- recargo % revisión en Bs
+insert into settings (key, value) values ('inspection_fee_bcv', 0) on conflict do nothing; -- precio manual revisión a tasa BCV (0 = auto)
 
 -- Seguridad (RLS): lectura pública, escritura solo personal autenticado
 alter table products enable row level security;
@@ -34,6 +36,7 @@ alter table settings enable row level security;
 create policy "Lectura pública de productos" on products for select using (true);
 create policy "Personal gestiona productos"  on products for all to authenticated using (true) with check (true);
 create policy "Lectura pública de ajustes"   on settings for select using (true);
+create policy "Personal crea ajustes"       on settings for insert to authenticated with check (true);
 create policy "Personal actualiza ajustes"   on settings for update to authenticated using (true) with check (true);
 
 -- Realtime (stock y tasa en vivo)

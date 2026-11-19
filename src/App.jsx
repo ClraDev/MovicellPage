@@ -1,12 +1,14 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Home from './pages/Home'
-import ProductPage from './pages/ProductPage'
-import Login from './pages/admin/Login'
-import Dashboard from './pages/admin/Dashboard'
 import ProtectedRoute from './pages/admin/ProtectedRoute'
 import { useRateStore } from './store/useRateStore'
 import FloatingWhatsApp from './components/ui/FloatingWhatsApp'
+
+// Estas pantallas se descargan solo cuando se visitan (la página principal carga más rápido)
+const ProductPage = lazy(() => import('./pages/ProductPage'))
+const Login = lazy(() => import('./pages/admin/Login'))
+const Dashboard = lazy(() => import('./pages/admin/Dashboard'))
 
 // Carga la tasa BCV al abrir la página y la mantiene actualizada:
 // cada 5 minutos y cada vez que el usuario vuelve a la pestaña.
@@ -33,6 +35,7 @@ export default function App() {
     <HashRouter>
       <Bootstrap />
       <FloatingWhatsApp />
+      <Suspense fallback={<div className="flex h-screen items-center justify-center text-gray-400">Cargando...</div>}>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/producto/:id" element={<ProductPage />} />
@@ -40,6 +43,7 @@ export default function App() {
         <Route path="/admin" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
     </HashRouter>
   )
 }

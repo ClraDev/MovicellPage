@@ -6,6 +6,8 @@ import { TITULAR_RETIRO } from '../ui/Notice'
 
 export default function ServicesSection() {
   const fee = useRateStore((s) => s.inspectionFee)
+  const feeBcv = useRateStore((s) => s.inspectionFeeBcv)
+  const feeMarkup = useRateStore((s) => s.inspectionMarkup)
   const openService = useUiStore((s) => s.openService)
 
   return (
@@ -30,7 +32,7 @@ export default function ServicesSection() {
               {fee > 0 ? (
                 <div className="mb-3">
                   <p className="mb-1 text-xs font-semibold uppercase text-gray-400">Costo de la revisión</p>
-                  <PriceTriple product={{ price_usd: fee, price_bcv_usd: null }} />
+                  <PriceTriple product={{ price_usd: fee, price_bcv_usd: feeBcv > 0 ? feeBcv : null }} markup={feeMarkup} />
                 </div>
               ) : (
                 <p className="mb-3 text-sm font-semibold text-gray-500">Costo de la revisión: por confirmar</p>

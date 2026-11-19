@@ -12,17 +12,8 @@ import { useRateStore } from '../store/useRateStore'
 import { fmtUsd, fmtBs, toBs } from '../lib/pricing'
 import { BUSINESS, CATEGORIES } from '../config'
 import PriceTriple from '../components/ui/PriceTriple'
+import { parseSpecs } from '../lib/specs'
 
-// Convierte "Marca: Samsung" (una por línea) en filas de la ficha técnica
-const parseSpecs = (text) =>
-  (text || '')
-    .split('\n')
-    .map((l) => l.trim())
-    .filter(Boolean)
-    .map((l) => {
-      const i = l.indexOf(':')
-      return i > 0 ? { label: l.slice(0, i).trim(), value: l.slice(i + 1).trim() } : { label: '', value: l }
-    })
 
 export default function ProductPage() {
   const { id } = useParams()

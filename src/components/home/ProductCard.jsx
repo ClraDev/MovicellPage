@@ -1,25 +1,31 @@
+import { memo, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ShoppingCart, Smartphone, Check } from 'lucide-react'
-import { useState } from 'react'
 import { useCartStore } from '../../store/useCartStore'
-import { useRateStore } from '../../store/useRateStore'
-import { fmtUsd, fmtBs, toBs } from '../../lib/pricing'
 import { useUiStore } from '../../store/useUiStore'
 import PriceTriple from '../ui/PriceTriple'
+import { parseSpecs } from '../../lib/specs'
 
-export default function ProductCard({ product }) {
+const SPECS_IN_CARD = 4 // cuántas características de la ficha se muestran en la tarjeta
+
+function ProductCard({ product }) {
   const addItem = useCartStore((s) => s.addItem)
   const inCart = useCartStore((s) => s.items.find((i) => i.id === product.id)?.qty || 0)
-  const rate = useRateStore((s) => s.rate)
   const [added, setAdded] = useState(false)
 
-  const maxStock = product.stock
   const soldOut = product.stock <= 0
   const low = product.stock > 0 && product.stock <= 3
+  const reachedMax = inCart >= product.stock
+  const to = `/producto/${product.id}`
+
+  // Se destacan las primeras características de la ficha técnica; si no hay, se usa la descripción
+  const specs = useMemo(
+    () => parseSpecs(product.specs).filter((s) => s.label).slice(0, SPECS_IN_CARD),
+    [product.specs]
+  )
+
   // Recuerda dónde estaba el usuario para volver al mismo lugar
   const remember = () => useUiStore.getState().setHomeScroll(window.scrollY)
-  const reachedMax = inCart >= maxStock
-  const to = `/producto/${product.id}`
 
   const badge = soldOut
     ? { text: 'Agotado', cls: 'bg-gray-200 text-gray-600' }
@@ -35,17 +41,23 @@ export default function ProductCard({ product }) {
       price_bcv_usd: product.price_bcv_usd ?? null,
       image_url: product.image_url,
       category: product.category,
-      stock: maxStock,
+      stock: product.stock,
     })
     setAdded(true)
     setTimeout(() => setAdded(false), 1200)
   }
 
   return (
-    <article className="flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:shadow-md">
+    <article className="flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
       <Link to={to} onClick={remember} className="relative flex aspect-square items-center justify-center bg-gray-50" aria-label={`Ver ${product.name}`}>
         {product.image_url ? (
-          <img src={product.image_url} alt={product.name} loading="lazy" className={`h-full w-full object-contain p-3 ${soldOut ? 'opacity-50' : ''}`} />
+          <img
+            src={product.image_url}
+            alt={product.name}
+            loading="lazy"
+            decoding="async"
+            className={`h-full w-full object-contain p-3 ${soldOut ? 'opacity-50' : ''}`}
+          />
         ) : (
           <Smartphone className="h-16 w-16 text-gray-300" strokeWidth={1.2} />
         )}
@@ -55,8 +67,18 @@ export default function ProductCard({ product }) {
       <div className="flex flex-1 flex-col p-3 sm:p-4">
         <Link to={to} onClick={remember} className="block">
           <h3 className="line-clamp-2 min-h-[2.5rem] text-sm font-bold leading-snug hover:text-brand sm:text-base">{product.name}</h3>
-          {product.description && (
-            <p className="mt-1 line-clamp-2 text-xs text-gray-500 sm:text-sm">{product.description}</p>
+
+          {specs.length > 0 ? (
+            <ul className="mt-2 space-y-1 rounded-lg bg-gray-50 px-2.5 py-2 text-xs">
+              {specs.map((s) => (
+                <li key={s.label} className="flex gap-1.5">
+                  <span className="shrink-0 text-gray-400">{s.label}</span>
+                  <span className="min-w-0 truncate font-semibold text-gray-700">{s.value}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            product.description && <p className="mt-1 line-clamp-2 text-xs text-gray-500 sm:text-sm">{product.description}</p>
           )}
         </Link>
 
@@ -74,3 +96,5 @@ export default function ProductCard({ product }) {
     </article>
   )
 }
+
+export default memo(ProductCard)

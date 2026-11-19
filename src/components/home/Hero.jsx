@@ -5,7 +5,7 @@ import { scrollToId } from '../../store/useUiStore'
 import { useRateStore } from '../../store/useRateStore'
 import { fmtUsd, fmtBs, refUsd, round2 } from '../../lib/pricing'
 
-export default function Hero({ featured = [] }) {
+export default function Hero({ featured = [], hasOffers = false }) {
   const [idx, setIdx] = useState(0)
   const rate = useRateStore((s) => s.rate)
   const markup = useRateStore((s) => s.markup)
@@ -23,16 +23,16 @@ export default function Hero({ featured = [] }) {
       <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10" />
       <div className="absolute -bottom-32 -left-16 h-80 w-80 rounded-full bg-white/10" />
 
-      <div className="relative mx-auto grid max-w-7xl items-center gap-8 px-4 py-12 md:grid-cols-2 md:py-20">
+      <div className="relative mx-auto grid max-w-7xl items-center gap-8 px-4 py-8 md:grid-cols-2 md:py-20">
         <div>
           <span className="inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-bold uppercase tracking-wider">
             Equipos de última generación
           </span>
-          <h1 className="mt-4 text-4xl font-extrabold leading-tight md:text-5xl">
+          <h1 className="mt-4 text-3xl font-extrabold leading-tight sm:text-4xl md:text-5xl">
             Su próximo teléfono, con precios claros en divisas y bolívares
           </h1>
-          <p className="mt-4 max-w-lg text-lg text-white/90">
-            Equipos nuevos, tablets y accesorios con precio preferencial al pagar en divisas y la opción de pagar en bolívares. Realice su pedido en pocos minutos a través de WhatsApp.
+          <p className="mt-4 max-w-lg text-base text-white/90 md:text-lg">
+            {hasOffers ? 'Equipos nuevos, tablets y accesorios con precio preferencial al pagar en divisas y la opción de pagar en bolívares.' : 'Equipos nuevos, tablets y accesorios con precios en divisas y la opción de pagar en bolívares.'} Realice su pedido en pocos minutos a través de WhatsApp.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <button
@@ -58,8 +58,8 @@ export default function Hero({ featured = [] }) {
         </div>
 
         {/* Tarjeta destacada */}
-        <div className="mx-auto w-full max-w-sm">
-          <div className="rounded-3xl bg-white/15 p-4 shadow-2xl backdrop-blur">
+        <div className="mx-auto w-full max-w-[15rem] sm:max-w-sm">
+          <div className="rounded-3xl bg-white/20 p-4 shadow-lg">
             <div className="flex aspect-square items-center justify-center overflow-hidden rounded-2xl bg-white">
               {item?.image_url ? (
                 <img src={item.image_url} alt={item.name} className="h-full w-full object-contain p-4" />

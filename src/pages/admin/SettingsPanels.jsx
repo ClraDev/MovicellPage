@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-import { fmtBs, fmtDateTime } from '../../lib/pricing'
+import { fmtUsd, fmtBs, fmtDateTime, round2 } from '../../lib/pricing'
 import { useRateStore } from '../../store/useRateStore'
 
+// upsert: crea el ajuste si todavía no existe en la base de datos
 const save = (key, value) =>
-  supabase.from('settings').update({ value, updated_at: new Date().toISOString() }).eq('key', key)
+  supabase.from('settings').upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' })
 
 // ---------- Tasa BCV ----------
 export function RatePanel() {
@@ -82,43 +83,84 @@ export function RatePanel() {
   )
 }
 
-// ---------- Recargo Bs y costo de revisión ----------
+// ---------- Precios: productos y revisión técnica ----------
 export function PricingPanel() {
-  const markup = useRateStore((s) => s.markup)
-  const fee = useRateStore((s) => s.inspectionFee)
-  const [m, setM] = useState('')
-  const [f, setF] = useState('')
+  const st = useRateStore()
+  const [f, setF] = useState({ markup: '', fee: '', feeMarkup: '', feeBcv: '' })
   const [msg, setMsg] = useState('')
   const [busy, setBusy] = useState(false)
 
-  useEffect(() => { setM(String(markup)); setF(String(fee)) }, [markup, fee])
+  useEffect(() => {
+    setF({
+      markup: String(st.markup),
+      fee: String(st.inspectionFee),
+      feeMarkup: String(st.inspectionMarkup),
+      feeBcv: String(st.inspectionFeeBcv),
+    })
+  }, [st.markup, st.inspectionFee, st.inspectionMarkup, st.inspectionFeeBcv])
 
+  const set = (k, v) => setF((x) => ({ ...x, [k]: v }))
   const num = (v) => Number(String(v).replace(',', '.'))
 
+  const feeNum = num(f.fee) || 0
+  const previewRef = num(f.feeBcv) > 0 ? num(f.feeBcv) : round2(feeNum * (1 + (num(f.feeMarkup) || 0) / 100))
+
   const saveAll = async () => {
-    const mv = num(m), fv = num(f)
-    if (!(mv >= 0) || !(fv >= 0)) return setMsg('Ingresa valores válidos (0 o más).')
+    const vals = [num(f.markup), num(f.fee), num(f.feeMarkup), num(f.feeBcv)]
+    if (vals.some((v) => !(v >= 0))) return setMsg('Ingrese valores válidos (0 o más).')
     setBusy(true)
-    const [a, b] = await Promise.all([save('bs_markup', mv), save('inspection_fee', fv)])
+    const res = await Promise.all([
+      save('bs_markup', vals[0]),
+      save('inspection_fee', vals[1]),
+      save('inspection_markup', vals[2]),
+      save('inspection_fee_bcv', vals[3]),
+    ])
     setBusy(false)
-    setMsg(a.error || b.error ? (a.error || b.error).message : 'Cambios guardados.')
+    const err = res.find((r) => r.error)
+    setMsg(err ? err.error.message : 'Cambios guardados.')
   }
 
   return (
     <section className="rounded-2xl bg-white p-5 shadow-sm">
       <h2 className="text-lg font-extrabold">Precios y ajustes</h2>
-      <div className="mt-3 grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-sm font-semibold">Recargo por pago en bolívares (%)</label>
-          <input className="input" inputMode="decimal" value={m} onChange={(e) => setM(e.target.value)} />
-          <p className="mt-1 text-xs text-gray-500">Precio referencial = precio en divisas + este %. Ej: 10 → un producto de $100 en divisas se cobra como $110 a tasa BCV. Cada producto puede tener su propio precio referencial.</p>
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-semibold">Costo de la revisión técnica ($ en divisas)</label>
-          <input className="input" inputMode="decimal" value={f} onChange={(e) => setF(e.target.value)} />
-          <p className="mt-1 text-xs text-gray-500">En 0 se muestra "a confirmar". El precio en Bs usa el mismo recargo.</p>
-        </div>
+
+      <div className="mt-3 rounded-xl border border-gray-100 p-4">
+        <h3 className="font-bold">Productos</h3>
+        <label className="mb-1 mt-2 block text-sm font-semibold">Recargo por pago en bolívares (%)</label>
+        <input className="input sm:max-w-xs" inputMode="decimal" value={f.markup} onChange={(e) => set('markup', e.target.value)} />
+        <p className="mt-1 text-xs text-gray-500">
+          Precio referencial = precio en divisas + este %. Ej.: 10 → un producto de $100 en divisas se cobra como $110 a tasa BCV.
+          En 0 no se muestra el aviso de oferta. Cada producto puede tener su propio precio referencial.
+        </p>
       </div>
+
+      <div className="mt-3 rounded-xl border border-gray-100 p-4">
+        <h3 className="font-bold">Revisión técnica</h3>
+        <div className="mt-2 grid gap-4 sm:grid-cols-3">
+          <div>
+            <label className="mb-1 block text-sm font-semibold">Costo en divisas ($)</label>
+            <input className="input" inputMode="decimal" value={f.fee} onChange={(e) => set('fee', e.target.value)} />
+            <p className="mt-1 text-xs text-gray-500">En 0 se muestra "por confirmar".</p>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-semibold">Recargo en bolívares (%)</label>
+            <input className="input" inputMode="decimal" value={f.feeMarkup} onChange={(e) => set('feeMarkup', e.target.value)} />
+            <p className="mt-1 text-xs text-gray-500">Independiente del recargo de los productos.</p>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-semibold">Precio manual a tasa BCV ($)</label>
+            <input className="input" inputMode="decimal" value={f.feeBcv} onChange={(e) => set('feeBcv', e.target.value)} />
+            <p className="mt-1 text-xs text-gray-500">Opcional. En 0 se calcula con el recargo.</p>
+          </div>
+        </div>
+        {feeNum > 0 && (
+          <p className="mt-3 text-sm text-gray-600">
+            Vista previa: <strong>{fmtUsd(feeNum)}</strong> en divisas · <strong>{fmtUsd(previewRef)}</strong> a tasa BCV
+            {st.rate > 0 && <> = <strong>{fmtBs(round2(previewRef * st.rate))}</strong></>}
+          </p>
+        )}
+      </div>
+
       <button onClick={saveAll} disabled={busy} className="btn-primary mt-4">Guardar ajustes</button>
       {msg && <p className="mt-2 text-sm text-gray-600">{msg}</p>}
     </section>

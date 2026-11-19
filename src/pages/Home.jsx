@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import Navbar from '../components/layout/Navbar'
 import Footer from '../components/layout/Footer'
 import Hero from '../components/home/Hero'
@@ -12,6 +12,8 @@ import CheckoutModal from '../components/cart/CheckoutModal'
 import { useProducts } from '../hooks/useProducts'
 import { useCartStore } from '../store/useCartStore'
 import { useUiStore } from '../store/useUiStore'
+import { useRateStore } from '../store/useRateStore'
+import { refUsd } from '../lib/pricing'
 
 export default function Home() {
   const { products, loading, error } = useProducts()
@@ -29,6 +31,10 @@ export default function Home() {
     }
   }, [loading])
 
+  // ¿Algún producto tiene precio en divisas menor al equivalente? (para mostrar o no el mensaje de oferta)
+  const markup = useRateStore((s) => s.markup)
+  const hasOffers = useMemo(() => products.some((p) => refUsd(p, markup) > Number(p.price_usd)), [products, markup])
+
   const featured = products
     .filter((p) => p.image_url && p.stock > 0 && p.category === 'telefonos')
     .slice(0, 4)
@@ -37,8 +43,8 @@ export default function Home() {
     <>
       <Navbar />
       <main>
-        <Hero featured={featured} />
-        <Catalog products={products} loading={loading} error={error} />
+        <Hero featured={featured} hasOffers={hasOffers} />
+        <Catalog products={products} loading={loading} error={error} hasOffers={hasOffers} />
         <ServicesSection />
         <LocationSection />
         <FaqSection />

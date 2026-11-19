@@ -47,7 +47,7 @@ export default function Navbar() {
   )
 
   return (
-    <header className="sticky top-0 z-40 border-b border-gray-100 bg-white/95 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-gray-100 bg-white">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4">
         <button onClick={() => go('inicio')} className="flex shrink-0 items-center gap-2" aria-label="Inicio">
           <img src={asset('logo-icon.png')} alt="" className="h-9 w-auto" />

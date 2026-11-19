@@ -14,7 +14,8 @@ export default function ServiceModal() {
   const { serviceModal, openService, closeService } = useUiStore()
   const fee = useRateStore((s) => s.inspectionFee)
   const rate = useRateStore((s) => s.rate)
-  const markup = useRateStore((s) => s.markup)
+  const feeBcv = useRateStore((s) => s.inspectionFeeBcv)
+  const feeMarkup = useRateStore((s) => s.inspectionMarkup)
   const [form, setForm] = useState(INITIAL)
   const [errors, setErrors] = useState({})
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
@@ -26,7 +27,7 @@ export default function ServiceModal() {
 
   const feeText = () => {
     if (!(fee > 0)) return 'por confirmar'
-    const ref = refUsd({ price_usd: fee }, markup)
+    const ref = refUsd({ price_usd: fee, price_bcv_usd: feeBcv > 0 ? feeBcv : null }, feeMarkup)
     return rate > 0
       ? `${fmtUsd(fee)} en divisas / ${fmtBs(round2(ref * rate))} en bolívares`
       : `${fmtUsd(fee)} en divisas`

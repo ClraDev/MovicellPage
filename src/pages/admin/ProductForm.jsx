@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { X, Upload, Loader2, Trash2, Star } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { CATEGORIES } from '../../config'
+import { compressImage } from '../../lib/image'
 import { useRateStore } from '../../store/useRateStore'
 import { fmtUsd, fmtBs, refUsd, round2 } from '../../lib/pricing'
 
@@ -24,10 +25,11 @@ export default function ProductForm({ product, onClose, onSaved }) {
     if (!files.length) return
     setUploading(true)
     setError('')
-    for (const file of files) {
+    for (const original of files) {
+      const file = await compressImage(original)
       const ext = file.name.split('.').pop()
       const path = `${crypto.randomUUID()}.${ext}`
-      const { error } = await supabase.storage.from('product-images').upload(path, file, { cacheControl: '31536000' })
+      const { error } = await supabase.storage.from('product-images').upload(path, file, { cacheControl: '31536000', contentType: file.type })
       if (error) {
         setError('No se pudo subir una imagen: ' + error.message)
         continue
